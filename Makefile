@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 LUCI_TITLE:=LuCI Support for Ariox
 LUCI_DEPENDS:=+luci-base +aria2 +luci-nginx
 
-PKG_MAINTAINER:=permails <logo@permails.com>
+PKG_MAINTAINER:=konvict <logo@permails.com>
 PKG_LICENSE:=MIT
 
 include $(TOPDIR)/feeds/luci/luci.mk
