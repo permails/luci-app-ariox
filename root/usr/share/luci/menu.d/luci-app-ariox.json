@@ -1,0 +1,18 @@
+{
+	"admin/services/ariox": {
+		"title": "Ariox Downloader",
+		"order": 30,
+		"action": {
+			"type": "view",
+			"path": "ariox/config"
+		},
+		"depends": {
+			"acl": [
+				"luci-app-ariox"
+			],
+			"uci": {
+				"aria2": true
+			}
+		}
+	}
+}

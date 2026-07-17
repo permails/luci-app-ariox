@@ -1,0 +1,20 @@
+#!/bin/sh
+
+uci -q get aria2.main >/dev/null || {
+	uci set aria2.main="aria2"
+	uci set aria2.main.enabled="0"
+	uci set aria2.main.user="aria2"
+	uci set aria2.main.dir="/mnt/emmc"
+	uci set aria2.main.config_dir="/var/etc/aria2"
+}
+
+# Always override 'none' to 'token' on first install of luci-app-ariox
+AUTH=$(uci -q get aria2.main.rpc_auth_method)
+if [ -z "$AUTH" ] || [ "$AUTH" = "none" ] || [ "$AUTH" = "user_pass" ]; then
+	uci set aria2.main.rpc_auth_method='token'
+	uci set aria2.main.rpc_secret='123456'
+fi
+
+uci commit aria2
+
+exit 0

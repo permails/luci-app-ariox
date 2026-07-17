@@ -1,0 +1,34 @@
+{
+	"luci-app-ariox": {
+		"description": "Grant UCI access for luci-app-ariox",
+		"read": {
+			"ubus": {
+				"service": [
+					"list"
+				]
+			},
+			"file": {
+				"/etc/passwd": [
+					"read"
+				],
+				"/sbin/logread": [
+					"exec"
+				],
+				"/usr/bin/aria2c": [
+					"exec"
+				],
+				"/usr/libexec/aria2-call": [
+					"exec"
+				]
+			},
+			"uci": [
+				"aria2"
+			]
+		},
+		"write": {
+			"uci": [
+				"aria2"
+			]
+		}
+	}
+}

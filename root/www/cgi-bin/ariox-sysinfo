@@ -1,0 +1,26 @@
+#!/bin/sh
+echo "Content-Type: application/json"
+echo ""
+
+# Extract dir from QUERY_STRING
+# Format: dir=/mnt/emmc
+if [ -n "$QUERY_STRING" ]; then
+  DIR=$(echo "$QUERY_STRING" | sed -n 's/^.*dir=\([^&]*\).*$/\1/p')
+  # Decode URL encoding (basic decode for %2F etc)
+  DIR=$(echo -e "${DIR//%/\\x}")
+fi
+
+if [ -z "$DIR" ]; then
+  DIR="/"
+fi
+
+if [ ! -d "$DIR" ]; then
+  echo "{\"error\": \"Directory not found\"}"
+  exit 0
+fi
+
+OUTPUT=$(df -k "$DIR" | tail -n 1)
+TOTAL=$(echo $OUTPUT | awk '{print $2}')
+USED=$(echo $OUTPUT | awk '{print $3}')
+FREE=$(echo $OUTPUT | awk '{print $4}')
+echo "{\"total\": $TOTAL, \"used\": $USED, \"free\": $FREE}"
