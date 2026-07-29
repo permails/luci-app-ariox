@@ -738,8 +738,11 @@ msgid "Token"
 msgstr "令牌"
 
 #: applications/luci-app-aria2/htdocs/luci-static/resources/view/aria2/config.js:486
-msgid "True"
-msgstr "True"
+msgid "Yes"
+msgstr "是"
+
+msgid "No"
+msgstr "否"
 
 #: applications/luci-app-aria2/htdocs/luci-static/resources/view/aria2/config.js:310
 msgid "Use a proxy server for all protocols."
@@ -854,3 +857,33 @@ msgstr "下载管理页面"
 
 msgid "Log"
 msgstr "日志"
+
+msgid "The Ariox service is running."
+msgstr "Ariox 服务正在运行。"
+
+msgid "The Ariox service is not running."
+msgstr "Ariox 服务未运行。"
+
+msgid "Error: Download directory does not exist or is not mounted!"
+msgstr "错误：下载目录不存在或未挂载！"
+
+msgid "Management Page"
+msgstr "Ariox 管理面板"
+
+msgid "Internal Storage, Free: "
+msgstr "内置存储，可用："
+
+msgid "Free: "
+msgstr "可用："
+
+msgid "-- No external drives detected --"
+msgstr "-- 未检测到外接硬盘 --"
+
+msgid "Ariox"
+msgstr "Ariox下载器"
+
+msgid "Ariox Downloader"
+msgstr "Ariox 下载器"
+
+msgid "Ariox is a lightweight, powerful offline download tool configuration center. It is a luci management page based on Aria2."
+msgstr "Ariox 是一款轻量、强大的离线下载工具配置中心。它是基于 Aria2 的 LuCI 管理页面。"

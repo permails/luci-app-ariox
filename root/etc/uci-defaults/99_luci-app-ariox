@@ -4,7 +4,7 @@ uci -q get aria2.main >/dev/null || {
 	uci set aria2.main="aria2"
 	uci set aria2.main.enabled="0"
 	uci set aria2.main.user="aria2"
-	uci set aria2.main.dir="/mnt/emmc"
+	uci set aria2.main.dir="/mnt/sda1"
 	uci set aria2.main.config_dir="/var/etc/aria2"
 }
 

@@ -40,9 +40,11 @@ CBIAria2Status = form.DummyValue.extend({
 				var isRunning = serviceData && serviceData.running;
 				var dirExists = dirStat && dirStat.type === 'directory';
 
-				var statusText = isRunning ? _('The Ariox service is running.') : _('The Ariox service is not running.');
+				var isZh = (_('Settings') !== 'Settings');
+
+				var statusText = isRunning ? (isZh ? 'Ariox 服务正在运行。' : _('The Ariox service is running.')) : (isZh ? 'Ariox 服务未运行。' : _('The Ariox service is not running.'));
 				if (!isRunning && !dirExists) {
-					statusText += ' ' + _('Error: Download directory does not exist or is not mounted!');
+					statusText += ' ' + (isZh ? '错误：下载目录不存在或未挂载！' : _('Error: Download directory does not exist or is not mounted!'));
 				}
 
 				var statusEl = E('div', { 'style': 'margin-bottom: 10px;' }, 
@@ -59,7 +61,7 @@ CBIAria2Status = form.DummyValue.extend({
 						'class': 'btn cbi-button cbi-button-apply',
 						'click': openWebInterface.bind(this, i),
 						'disabled': isRunning ? null : 'disabled'
-					}, _('Management Page')));
+					}, isZh ? 'Ariox 管理面板' : _('Management Page')));
 				}
 				var btnEl = btns.length > 0 ? E('div', btns) : null;
 
@@ -255,16 +257,16 @@ return view.extend({
 						continue;
 					}
 
-					if (availableKb > 5242880 && (mountPoint === '/' || mountPoint === '/overlay')) {
+					if (availableKb > 5242880 && mountPoint === '/') {
 						info.mounts.push({
 							path: '/root',
-							desc: '/root (' + _('Internal Storage, Free: ') + Math.floor(availableKb/1048576) + ' GB)'
+							desc: '/root (' + (isZh ? '内置存储，可用：' : _('Internal Storage, Free: ')) + Math.floor(availableKb/1048576) + ' GB)'
 						});
 					} else if (mountPoint.indexOf('/mnt') === 0 || mountPoint.indexOf('/media') === 0) {
 						var gb = (availableKb / 1048576).toFixed(1);
 						info.mounts.push({
 							path: mountPoint,
-							desc: mountPoint + ' (' + _('Free: ') + gb + ' GB)'
+							desc: mountPoint + ' (' + (isZh ? '可用：' : _('Free: ')) + gb + ' GB)'
 						});
 					}
 				}
@@ -276,11 +278,12 @@ return view.extend({
 
 	render: function(aria2) {
 		let m, s, o;
+		var isZh = (_('Settings') !== 'Settings');
 
 		m = new form.Map('aria2', _('Ariox Downloader'), _('Ariox is a lightweight, powerful offline download tool configuration center. It is a luci management page based on Aria2.'));
 
 		s = m.section(form.TypedSection);
-		s.title = '%s - %s'.format('Ariox', _('Running Status'));
+		s.title = isZh ? 'Ariox服务状态' : _('Ariox Service Status');
 		s.anonymous = true;
 		s.cfgsections = function() { return [ 'status' ] };
 
@@ -304,8 +307,12 @@ return view.extend({
 		o = s.taboption('basic', form.Value, 'dir', _('Download directory'),
 			_('<span style="color:red; font-weight:bold;">[WARNING] Please make sure to mount and use an external storage device (such as USB drive or HDD). Do not download directly to the system space, otherwise it will easily exhaust the flash memory life and brick the device! Format example: /mnt/sda1.</span>'));
 		o.rmempty = false;
-		for (var i = 0; i < aria2.mounts.length; i++) {
-			o.value(aria2.mounts[i].path, aria2.mounts[i].desc);
+		if (aria2.mounts.length === 0) {
+			o.value('', isZh ? '-- 未检测到外接硬盘 --' : _('-- No external drives detected --'));
+		} else {
+			for (var i = 0; i < aria2.mounts.length; i++) {
+				o.value(aria2.mounts[i].path, aria2.mounts[i].desc);
+			}
 		}
 
 		o = s.taboption('basic', form.DummyValue, '_hr2');
@@ -337,15 +344,15 @@ return view.extend({
 
 		s.tab('rpc', _('RPC Options'))
 
-		o = s.taboption('rpc', form.Flag, 'pause', _('Pause'), _('Pause download after added.'));
-		o.enabled = 'true';
-		o.disabled = 'false';
+		o = s.taboption('rpc', form.ListValue, 'pause', _('Pause'), _('Pause download after added.'));
+		o.value('true', isZh ? '是' : _('True'));
+		o.value('false', isZh ? '否' : _('False'));
 		o.default = 'false';
 
-		o = s.taboption('rpc', form.Flag, 'pause_metadata', _('Pause metadata'),
+		o = s.taboption('rpc', form.ListValue, 'pause_metadata', _('Pause metadata'),
 			_('Pause downloads created as a result of metadata download.'));
-		o.enabled = 'true';
-		o.disabled = 'false';
+		o.value('true', isZh ? '是' : _('True'));
+		o.value('false', isZh ? '否' : _('False'));
 		o.default = 'false';
 
 		o = s.taboption('rpc', form.Value, 'rpc_listen_port', _('RPC port'));
@@ -374,11 +381,12 @@ return view.extend({
 		o.password  =  true;
 
 		if (aria2.https) {
-			o = s.taboption('rpc', form.Flag, 'rpc_secure', _('RPC secure'),
+			o = s.taboption('rpc', form.ListValue, 'rpc_secure', _('RPC secure'),
 				_('RPC transport will be encrypted by SSL/TLS. The RPC clients must use https'
 				+ ' scheme to access the server. For WebSocket client, use wss scheme.'));
-			o.enabled = 'true';
-			o.disabled = 'false';
+			o.value('true', isZh ? '是' : _('True'));
+			o.value('false', isZh ? '否' : _('False'));
+			o.default = 'false';
 			o.rmempty = false;
 
 			o = s.taboption('rpc', form.Value, 'rpc_certificate', _('RPC certificate'),
@@ -424,10 +432,10 @@ return view.extend({
 		o.password = true;
 
 		if (aria2.https) {
-			o = s.taboption('http', form.Flag, 'check_certificate', _('Check certificate'),
+			o = s.taboption('http', form.ListValue, 'check_certificate', _('Check certificate'),
 				_('Verify the peer using certificates specified in "CA certificate" option.'));
-			o.enabled = 'true';
-			o.disabled = 'false';
+			o.value('true', isZh ? '是' : _('True'));
+			o.value('false', isZh ? '否' : _('False'));
 			o.default = 'true';
 			o.rmempty = false;
 
@@ -449,21 +457,21 @@ return view.extend({
 		}
 
 		if (aria2.gzip) {
-			o = s.taboption('http', form.Flag, 'http_accept_gzip', _('HTTP accept gzip'),
+			o = s.taboption('http', form.ListValue, 'http_accept_gzip', _('HTTP accept gzip'),
 				_('Send <code>Accept: deflate, gzip</code> request header and inflate response'
 				+ ' if remote server responds with <code>Content-Encoding: gzip</code> or'
 				+ ' <code>Content-Encoding: deflate</code>.'));
-			o.enabled = 'true';
-			o.disabled = 'false';
+			o.value('true', isZh ? '是' : _('True'));
+			o.value('false', isZh ? '否' : _('False'));
 			o.default = 'false';
 		}
 
-		o = s.taboption('http', form.Flag, 'http_no_cache', _('HTTP no cache'),
+		o = s.taboption('http', form.ListValue, 'http_no_cache', _('HTTP no cache'),
 			_('Send <code>Cache-Control: no-cache</code> and <code>Pragma: no-cache</code>'
 			+ ' header to avoid cached content. If disabled, these headers are not sent and you'
 			+ ' can add Cache-Control header with a directive you like using "Header" option.'));
-		o.enabled = 'true';
-		o.disabled = 'false';
+		o.value('true', isZh ? '是' : _('True'));
+		o.value('false', isZh ? '否' : _('False'));
 		o.default = 'false';
 
 		o = s.taboption('http', form.DynamicList, 'header', _('Header'),
@@ -517,61 +525,62 @@ return view.extend({
 		if (aria2.bt) {
 			s.tab('bt', _('BitTorrent Options'));
 
-			o = s.taboption('bt', form.Flag, 'enable_dht', _('IPv4 <abbr title="Distributed Hash Table">DHT</abbr> enabled'),
+			o = s.taboption('bt', form.ListValue, 'enable_dht', _('IPv4 <abbr title="Distributed Hash Table">DHT</abbr> enabled'),
 				'%s %s'.format(
 					_('Enable IPv4 DHT functionality. It also enables UDP tracker support.'),
 					_('This option will be ignored if a private flag is set in a torrent.')
 				));
-			o.enabled = 'true';
-			o.disabled = 'false';
+			o.value('true', isZh ? '是' : _('True'));
+			o.value('false', isZh ? '否' : _('False'));
 			o.default = 'true';
 			o.rmempty = false;
 
-			o = s.taboption('bt', form.Flag, 'enable_dht6', _('IPv6 <abbr title="Distributed Hash Table">DHT</abbr> enabled'),
+			o = s.taboption('bt', form.ListValue, 'enable_dht6', _('IPv6 <abbr title="Distributed Hash Table">DHT</abbr> enabled'),
 				'%s %s'.format(
 					_('Enable IPv6 DHT functionality.'),
 					_('This option will be ignored if a private flag is set in a torrent.')
 				));
-			o.enabled = 'true';
-			o.disabled = 'false';
+			o.value('true', isZh ? '是' : _('True'));
+			o.value('false', isZh ? '否' : _('False'));
+			o.default = 'false';
 
-			o = s.taboption('bt', form.Flag, 'bt_enable_lpd', _('<abbr title="Local Peer Discovery">LPD</abbr> enabled'),
+			o = s.taboption('bt', form.ListValue, 'bt_enable_lpd', _('<abbr title="Local Peer Discovery">LPD</abbr> enabled'),
 				'%s %s'.format(
 					_('Enable Local Peer Discovery.'),
 					_('This option will be ignored if a private flag is set in a torrent.')
 				));
-			o.enabled = 'true';
-			o.disabled = 'false';
+			o.value('true', isZh ? '是' : _('True'));
+			o.value('false', isZh ? '否' : _('False'));
 			o.default = 'false';
 
-			o = s.taboption('bt', form.Flag, 'enable_peer_exchange', _('Enable peer exchange'),
+			o = s.taboption('bt', form.ListValue, 'enable_peer_exchange', _('Enable peer exchange'),
 				'%s %s'.format(
 					_('Enable Peer Exchange extension.'),
 					_('This option will be ignored if a private flag is set in a torrent.')
 				));
-			o.enabled = 'true';
-			o.disabled = 'false';
+			o.value('true', isZh ? '是' : _('True'));
+			o.value('false', isZh ? '否' : _('False'));
 			o.default = 'true';
 			o.rmempty = false;
 
-			o = s.taboption('bt', form.Flag, 'bt_save_metadata', _('Save metadata'),
+			o = s.taboption('bt', form.ListValue, 'bt_save_metadata', _('Save metadata'),
 				_('Save meta data as ".torrent" file. This option has effect only when BitTorrent'
 				+ ' Magnet URI is used. The file name is hex encoded info hash with suffix ".torrent".'));
-			o.enabled = 'true';
-			o.disabled = 'false';
+			o.value('true', isZh ? '是' : _('True'));
+			o.value('false', isZh ? '否' : _('False'));
 			o.default = 'false';
 
-			o = s.taboption('bt', form.Flag, 'bt_remove_unselected_file', _('Remove unselected file'),
+			o = s.taboption('bt', form.ListValue, 'bt_remove_unselected_file', _('Remove unselected file'),
 				_('Removes the unselected files when download is completed in BitTorrent. Please'
 				+ ' use this option with care because it will actually remove files from your disk.'));
-			o.enabled = 'true';
-			o.disabled = 'false';
+			o.value('true', isZh ? '是' : _('True'));
+			o.value('false', isZh ? '否' : _('False'));
 			o.default = 'false';
 
-			o = s.taboption('bt', form.Flag, 'bt_seed_unverified', _('Seed unverified'),
+			o = s.taboption('bt', form.ListValue, 'bt_seed_unverified', _('Seed unverified'),
 				_('Seed previously downloaded files without verifying piece hashes.'));
-			o.enabled = 'true';
-			o.disabled = 'false';
+			o.value('true', isZh ? '是' : _('True'));
+			o.value('false', isZh ? '否' : _('False'));
 			o.default = 'false';
 
 			o = s.taboption('bt', form.Value, 'listen_port', _('BitTorrent listen port'),
@@ -588,8 +597,8 @@ return view.extend({
 			o.placeholder = '6881-6999';
 
 			o = s.taboption('bt', form.ListValue, 'follow_torrent', _('Follow torrent'));
-			o.value('true', _('True'));
-			o.value('false', _('False'));
+			o.value('true', isZh ? '是' : _('True'));
+			o.value('false', isZh ? '否' : _('False'));
 			o.value('mem', _('Keep in memory'));
 
 			o = s.taboption('bt', form.Value, 'max_overall_upload_limit', _('Max overall upload limit'),
@@ -660,11 +669,11 @@ return view.extend({
 
 	s.tab('advance', _('Advanced Options'));
 
-		o = s.taboption('advance', form.Flag, 'disable_ipv6', _('IPv6 disabled'),
+		o = s.taboption('advance', form.ListValue, 'disable_ipv6', _('IPv6 disabled'),
 			_('Disable IPv6. This is useful if you have to use broken DNS and want to avoid terribly'
 			+ ' slow AAAA record lookup.'));
-		o.enabled = 'true';
-		o.disabled = 'false';
+		o.value('true', isZh ? '是' : _('True'));
+		o.value('false', isZh ? '否' : _('False'));
 		o.default = 'false';
 
 		o = s.taboption('advance', form.Value, 'auto_save_interval', _('Auto save interval'),
@@ -699,12 +708,12 @@ return view.extend({
 		o.value('falloc', _('falloc'));
 		o.default = 'prealloc';
 
-		o = s.taboption('advance', form.Flag, 'force_save', _('Force save'),
+		o = s.taboption('advance', form.ListValue, 'force_save', _('Force save'),
 			_('Save download to session file even if the download is completed or removed.'
 			+ ' This option also saves control file in that situations. This may be useful to save'
 			+ ' BitTorrent seeding which is recognized as completed state.'));
-		o.enabled = 'true';
-		o.disabled = 'false';
+		o.value('true', isZh ? '是' : _('True'));
+		o.value('false', isZh ? '否' : _('False'));
 		o.default = 'false';
 
 		o = s.taboption('advance', form.Value, 'max_overall_download_limit', _('Max overall download limit'),
@@ -721,14 +730,15 @@ return view.extend({
 			));
 		o.placeholder = '0';
 
-		s.tab('log', _('Log'));
-		o = s.taboption('log', CBIAria2Log);
+		o = s.taboption('advance', form.DummyValue, '_hr3');
+		o.render = function() { return E('hr', { 'style': 'margin: 15px 0; border: 0; border-top: 1px solid #ddd; border-bottom: 1px solid #fff;' }); };
 
-		s.tab('extra', _('Extra Settings'), _('Settings in this section will be added to config file.'));
-
-		o = s.taboption('extra', form.DynamicList, 'extra_settings', _('Settings list'),
+		o = s.taboption('advance', form.DynamicList, 'extra_settings', _('Extra Settings'),
 			_('List of extra settings. Format: option=value, eg. <code>netrc-path=/tmp/.netrc</code>.'));
 		o.placeholder = 'option=value';
+
+		s.tab('log', _('Log'));
+		o = s.taboption('log', CBIAria2Log);
 
 		return m.render();
 	}
