@@ -738,10 +738,10 @@ msgid "Token"
 msgstr "令牌"
 
 #: applications/luci-app-aria2/htdocs/luci-static/resources/view/aria2/config.js:486
-msgid "Yes"
+msgid "True"
 msgstr "是"
 
-msgid "No"
+msgid "False"
 msgstr "否"
 
 #: applications/luci-app-aria2/htdocs/luci-static/resources/view/aria2/config.js:310

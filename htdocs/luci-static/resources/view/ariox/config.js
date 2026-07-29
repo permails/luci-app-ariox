@@ -223,6 +223,7 @@ function showRPCURL(section_id, useWS, inputEl) {
 
 return view.extend({
 	load: function() {
+		var isZh = (_('Settings') !== 'Settings');
 		return Promise.all([
 			fs.exec_direct('/usr/bin/aria2c', [ '-v' ]),
 			fs.exec_direct('/bin/df', [ '-k' ])
