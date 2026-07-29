@@ -29,30 +29,41 @@ CBIAria2Status = form.DummyValue.extend({
 		var node = E('div', {}, E('p', {}, E('em', {}, _('Collecting data...'))));
 		poll.add(function() {
 			return Promise.all([
-				callServiceList('aria2', extra)
-				.then(function(res) {
-					return E('div', { 'style': 'margin-bottom: 10px;' }, 
-						E('em', {}, 
-							E('span', { 'style': res.running ? 'color:green;' : 'color:red;' }, 
-								E('strong', {}, res.running ? _('The Ariox service is running.') : _('The Ariox service is not running.'))
-							)
-						)
-					);
-				}),
-				getWebFrontInstalled()
-				.then(function(installed) {
-					var btns = [];
-					for (var i in installed) {
-						btns.push(E('button', {
-							'class': 'btn cbi-button cbi-button-apply',
-							'click': openWebInterface.bind(this, i)
-						}, installed[i]));
-					}
-					return btns.length > 0 ? E('div', btns) : null;
-				})
+				callServiceList('aria2', extra),
+				getWebFrontInstalled(),
+				L.resolveDefault(fs.stat(L.uci.get('aria2', 'main', 'dir')), null)
 			]).then(function(res) {
-				res = res.filter(function(r) { return r ? 1 : 0 });
-				dom.content(node, res);
+				var serviceData = res[0];
+				var installed = res[1];
+				var dirStat = res[2];
+
+				var isRunning = serviceData && serviceData.running;
+				var dirExists = dirStat && dirStat.type === 'directory';
+
+				var statusText = isRunning ? _('The Ariox service is running.') : _('The Ariox service is not running.');
+				if (!isRunning && !dirExists) {
+					statusText += ' ' + _('Error: Download directory does not exist or is not mounted!');
+				}
+
+				var statusEl = E('div', { 'style': 'margin-bottom: 10px;' }, 
+					E('em', {}, 
+						E('span', { 'style': isRunning ? 'color:green;' : 'color:red;' }, 
+							E('strong', {}, statusText)
+						)
+					)
+				);
+
+				var btns = [];
+				for (var i in installed) {
+					btns.push(E('button', {
+						'class': 'btn cbi-button cbi-button-apply',
+						'click': openWebInterface.bind(this, i),
+						'disabled': isRunning ? null : 'disabled'
+					}, _('Management Page')));
+				}
+				var btnEl = btns.length > 0 ? E('div', btns) : null;
+
+				dom.content(node, btnEl ? [statusEl, btnEl] : [statusEl]);
 			});
 		});
 		return node;
@@ -148,7 +159,7 @@ function getToken(section_id) {
 
 function getWebFrontInstalled() {
 	return Promise.resolve({
-		'ariox': _('Download Management Page')
+		'ariox': true
 	});
 }
 
@@ -210,8 +221,13 @@ function showRPCURL(section_id, useWS, inputEl) {
 
 return view.extend({
 	load: function() {
-		return fs.exec_direct('/usr/bin/aria2c', [ '-v' ]).then(function(res) {
-			var info = {}, lines = res.split(/\r?\n|\r/g);
+		return Promise.all([
+			fs.exec_direct('/usr/bin/aria2c', [ '-v' ]),
+			fs.exec_direct('/bin/df', [ '-k' ])
+		]).then(function(results) {
+			var res = results[0];
+			var dfOut = results[1];
+			var info = { mounts: [] }, lines = res.split(/\r?\n|\r/g);
 
 			for (var i = 0; i < lines.length; ++i) {
 				if (/^aria2 version/.exec(lines[i])) {
@@ -226,6 +242,34 @@ return view.extend({
 					info.cookie = lines[i].search(/Firefox3 Cookie/) >= 0;
 				}
 			}
+
+			var dfLines = (dfOut || '').trim().split(/\n/);
+			for (var i = 1; i < dfLines.length; i++) {
+				var parts = dfLines[i].trim().split(/\s+/);
+				if (parts.length >= 6) {
+					var fsName = parts[0];
+					var availableKb = parseInt(parts[3]) || 0;
+					var mountPoint = parts.slice(5).join(' ');
+
+					if (fsName.match(/tmpfs|devtmpfs|squashfs/)) {
+						continue;
+					}
+
+					if (availableKb > 5242880 && (mountPoint === '/' || mountPoint === '/overlay')) {
+						info.mounts.push({
+							path: '/root',
+							desc: '/root (' + _('Internal Storage, Free: ') + Math.floor(availableKb/1048576) + ' GB)'
+						});
+					} else if (mountPoint.indexOf('/mnt') === 0 || mountPoint.indexOf('/media') === 0) {
+						var gb = (availableKb / 1048576).toFixed(1);
+						info.mounts.push({
+							path: mountPoint,
+							desc: mountPoint + ' (' + _('Free: ') + gb + ' GB)'
+						});
+					}
+				}
+			}
+
 			return info;
 		});
 	},
@@ -260,6 +304,9 @@ return view.extend({
 		o = s.taboption('basic', form.Value, 'dir', _('Download directory'),
 			_('<span style="color:red; font-weight:bold;">[WARNING] Please make sure to mount and use an external storage device (such as USB drive or HDD). Do not download directly to the system space, otherwise it will easily exhaust the flash memory life and brick the device! Format example: /mnt/sda1.</span>'));
 		o.rmempty = false;
+		for (var i = 0; i < aria2.mounts.length; i++) {
+			o.value(aria2.mounts[i].path, aria2.mounts[i].desc);
+		}
 
 		o = s.taboption('basic', form.DummyValue, '_hr2');
 		o.render = function() { return E('hr', { 'style': 'margin: 15px 0; border: 0; border-top: 1px solid #ddd; border-bottom: 1px solid #fff;' }); };
@@ -677,22 +724,12 @@ return view.extend({
 		s.tab('log', _('Log'));
 		o = s.taboption('log', CBIAria2Log);
 
-		s = m.section(form.NamedSection, 'main', 'aria2', _('Extra Settings'),
-			_('Settings in this section will be added to config file.'));
-		s.addremove = false;
-		s.anonymous = true;
+		s.tab('extra', _('Extra Settings'), _('Settings in this section will be added to config file.'));
 
-		o = s.option(form.DynamicList, 'extra_settings', _('Settings list'),
+		o = s.taboption('extra', form.DynamicList, 'extra_settings', _('Settings list'),
 			_('List of extra settings. Format: option=value, eg. <code>netrc-path=/tmp/.netrc</code>.'));
 		o.placeholder = 'option=value';
 
-		return m.render().then(function(mapEl) {
-			var sections = mapEl.querySelectorAll('.cbi-section');
-			if (sections.length >= 2) {
-				var hr = E('hr', { style: 'margin: 25px 0; border: none; border-top: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.05);' });
-				sections[1].parentNode.insertBefore(hr, sections[1]);
-			}
-			return mapEl;
-		});
+		return m.render();
 	}
 });
