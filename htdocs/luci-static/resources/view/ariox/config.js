@@ -173,7 +173,7 @@ function openWebInterface(path) {
 	if (path === 'ariox') {
 		L.resolveDefault(L.uci.load('aria2'), null).then(function() {
 			var authMethod = L.uci.get('aria2', 'main', 'rpc_auth_method');
-			var port = L.uci.get('aria2', 'main', 'rpc_listen_port') || '6800';
+			var port = window.location.port || '';
 			if (authMethod === 'token') {
 				var token = L.uci.get('aria2', 'main', 'rpc_secret') || '';
 				url += '/?token=' + encodeURIComponent(token) + '&port=' + port;
