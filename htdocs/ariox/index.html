@@ -5,43 +5,8 @@
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ariox</title>
-    <script type="module" crossorigin src="./assets/index-Dmla3W2t.js"></script>
+    <script type="module" crossorigin src="./assets/index-BPGTv_qn.js"></script>
     <link rel="stylesheet" crossorigin href="./assets/index-Bbwrukhp.css">
-    <script>
-      (function() {
-        // Intercept WebSocket messages
-        var OrigWebSocket = window.WebSocket;
-        window.WebSocket = function(url, protocols) {
-          var ws = new OrigWebSocket(url, protocols);
-          ws.addEventListener('message', function(event) {
-            try {
-              var data = JSON.parse(event.data);
-              if (data.error && data.error.code === 1 && data.error.message === "Unauthorized") {
-                window.fetch('/cgi-bin/luci/ariox/auth_fail').catch(function(){});
-              }
-            } catch(e) {}
-          });
-          return ws;
-        };
-        window.WebSocket.prototype = OrigWebSocket.prototype;
-
-        // Intercept fetch responses
-        var origFetch = window.fetch;
-        window.fetch = function() {
-          var args = arguments;
-          if (args[0] === '/cgi-bin/luci/ariox/auth_fail') return origFetch.apply(this, args);
-          return origFetch.apply(this, args).then(function(res) {
-            var clone = res.clone();
-            clone.json().then(function(data) {
-              if (data && data.error && data.error.code === 1 && data.error.message === "Unauthorized") {
-                origFetch('/cgi-bin/luci/ariox/auth_fail').catch(function(){});
-              }
-            }).catch(function(){});
-            return res;
-          });
-        };
-      })();
-    </script>
   </head>
   <body>
     <div id="root"></div>
