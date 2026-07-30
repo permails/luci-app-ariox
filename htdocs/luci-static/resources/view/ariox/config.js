@@ -113,39 +113,48 @@ CBIRpcUrl = form.DummyValue.extend({
 });
 
 var CBIAria2Log = form.DummyValue.extend({
-	renderWidget: function() {
-		var log_textarea = E('div', { 'id': 'log_textarea', 'style': 'padding: 10px; text-align: left;' },
+	render: function(section_id, option_index, cfgvalue) {
+		var container = E('div', { 'id': 'log_textarea', 'style': 'padding: 10px; text-align: left;' },
 			E('img', {
 				'src': L.resource('icons/loading.svg'),
 				'alt': _('Loading'),
 				'style': 'vertical-align:middle'
 			}, _('Collecting data...'))
 		);
-		poll.add(function() {
-			return Promise.all([
-				fs.exec_direct('/usr/libexec/aria2-call', [ 'tail' ]).then(function(res) {
-					return res.trim().split(/\n/).reverse().join('\n')
-				}),
-				fs.exec_direct('/sbin/logread', [ '-e', 'aria2' ]).then(function(res) {
-					return res.trim().split(/\n/).reverse().slice(0, 50).join('\n')
-				})
-			]).then(function(data) {
-				var t = E('pre', { 'wrap': 'pre', 'style': 'padding: .5rem; word-break: break-all; margin: 0;' }, [
-					E('div', { 'class': 'description', 'style': 'background-color: #33ccff;' }, _('Last 50 lines of log file:')),
-					E('br'),
-					data[0] || _('No log data.'),
-					E('br'),
-					E('br'),
-					E('div', { 'class': 'description', 'style': 'background-color: #33ccff;' }, _('Last 50 lines of syslog:')),
-					E('br'),
-					data[1] || _('No log data.')
-				]);
-				dom.content(log_textarea, t);
+
+		L.require('tools.views').then(function(views) {
+			var logBoxClass = views.LogreadBox('aria2', _('Aria2 Log'));
+			var logBox = Object.create(logBoxClass.prototype);
+			
+			Promise.resolve(logBox.load()).then(function(loglines) {
+				var node = logBox.render(loglines);
+				
+				var isZh = (_('Settings') !== 'Settings');
+				if (isZh) {
+					var h2 = node.querySelector('h2');
+					if (h2) h2.textContent = 'Aria2 日志';
+					
+					var descr = node.querySelector('.cbi-section-descr');
+					if (descr) descr.textContent = '系统日志输出，已预先过滤相关信息：aria2';
+				}
+				
+				dom.content(container, node);
+				
+				var style = E('style', {},
+					'#syslog { width: 100% !important; min-width: 100% !important; max-width: 100% !important; box-sizing: border-box; } ' +
+					'#content_syslog > div:nth-child(2) { display: none !important; }'
+				);
+				dom.append(container, style);
+			}).catch(function(err) {
+				dom.content(container, E('p', {}, _('Unable to load log data: ' + err.message)));
 			});
 		});
-		return log_textarea;
+
+		return E('div', { 'class': 'aria2-log-container', 'style': 'width: 100%;' }, container);
 	}
 });
+
+
 
 function getToken(section_id) {
 	var len = 32, randomStr = '';
@@ -738,7 +747,7 @@ return view.extend({
 		o.placeholder = 'option=value';
 
 		s.tab('log', _('Log'));
-		o = s.taboption('log', CBIAria2Log);
+		o = s.taboption('log', CBIAria2Log, '_log');
 
 		return m.render();
 	}

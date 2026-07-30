@@ -887,3 +887,10 @@ msgstr "Ariox 下载器"
 
 msgid "Ariox is a lightweight, powerful offline download tool configuration center. It is a luci management page based on Aria2."
 msgstr "Ariox 是一款轻量、强大的离线下载工具配置中心。它是基于 Aria2 的 LuCI 管理页面。"
+
+msgid "Aria2 Log"
+msgstr "Aria2 日志"
+
+msgid "The syslog output, pre-filtered for messages related to: aria2"
+msgstr "系统日志输出，已预先过滤相关信息：aria2"
+
