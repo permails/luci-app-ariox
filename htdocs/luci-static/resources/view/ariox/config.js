@@ -400,8 +400,6 @@ return view.extend({
 				+ ' files with a blank import password can be opened!<br/>When using PEM, you have to'
 				+ ' specify the "RPC private key" as well.'));
 			o.depends('rpc_secure', 'true');
-			o.placeholder = '/etc/uhttpd.crt';
-			o.default = '/etc/uhttpd.crt';
 			o.optional = false;
 			o.rmempty = false;
 
@@ -409,8 +407,6 @@ return view.extend({
 				_('Use the private key in FILE for RPC server. The private key must be'
 				+ ' decrypted and in PEM format.'));
 			o.depends('rpc_secure', 'true');
-			o.placeholder = '/etc/uhttpd.key';
-			o.default = '/etc/uhttpd.key';
 			o.optional = false;
 			o.rmempty = false;
 		}
