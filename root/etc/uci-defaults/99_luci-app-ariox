@@ -10,9 +10,13 @@ uci -q get aria2.main >/dev/null || {
 
 # Always override 'none' to 'token' on first install of luci-app-ariox
 AUTH=$(uci -q get aria2.main.rpc_auth_method)
-if [ -z "$AUTH" ] || [ "$AUTH" = "none" ] || [ "$AUTH" = "user_pass" ]; then
+SECRET=$(uci -q get aria2.main.rpc_secret)
+
+if [ -z "$AUTH" ] || [ "$AUTH" = "none" ] || [ "$AUTH" = "user_pass" ] || [ "$SECRET" = "123456" ] || [ -z "$SECRET" ]; then
+	# Generate a random 16-character hex string
+	RANDOM_TOKEN=$(hexdump -n 8 -e '1/1 "%02x"' /dev/urandom)
 	uci set aria2.main.rpc_auth_method='token'
-	uci set aria2.main.rpc_secret='123456'
+	uci set aria2.main.rpc_secret="$RANDOM_TOKEN"
 fi
 
 uci commit aria2
