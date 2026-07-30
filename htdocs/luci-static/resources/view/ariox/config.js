@@ -57,11 +57,14 @@ CBIAria2Status = form.DummyValue.extend({
 
 				var btns = [];
 				for (var i in installed) {
-					btns.push(E('button', {
+					var btnOpts = {
 						'class': 'btn cbi-button cbi-button-apply',
-						'click': openWebInterface.bind(this, i),
-						'disabled': isRunning ? null : 'disabled'
-					}, isZh ? 'Ariox 管理面板' : _('Management Page')));
+						'click': openWebInterface.bind(this, i)
+					};
+					if (!isRunning) {
+						btnOpts.disabled = true;
+					}
+					btns.push(E('button', btnOpts, isZh ? 'Ariox 管理面板' : _('Management Page')));
 				}
 				var btnEl = btns.length > 0 ? E('div', btns) : null;
 
